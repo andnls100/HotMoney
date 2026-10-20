@@ -53,9 +53,11 @@ def fetch_bars(code: str, start: str, end: str, cache_dir: Path) -> pd.DataFrame
     cache = cache_dir / "bars" / f"{code}.csv"
     if cache.exists():
         old = pd.read_csv(cache, dtype={"代码": str, "code": str})
-        if "日期" in old.columns and not old.empty:
+        date_col = "date" if "date" in old.columns else ("日期" if "日期" in old.columns else None)
+        if date_col and not old.empty:
             try:
-                if pd.to_datetime(old["日期"]).min() <= pd.Timestamp(start) and pd.to_datetime(old["日期"]).max() >= pd.Timestamp(end):
+                dates = pd.to_datetime(old[date_col], errors="coerce").dropna()
+                if not dates.empty and dates.min() <= pd.Timestamp(start) and dates.max() >= pd.Timestamp(end):
                     return old
             except (ValueError, TypeError):
                 pass
